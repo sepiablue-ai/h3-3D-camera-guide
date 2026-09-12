@@ -1,0 +1,23 @@
+{
+  "1000": {
+    "class_type": "H3CameraGuide",
+    "inputs": {
+      "camera_state": "{\"version\": 1, \"keys\": [{\"t\": 0, \"orbit\": 0, \"elevation\": 85, \"distance\": 4, \"target\": [0, 1, 0], \"fov\": 45}, {\"t\": 1, \"orbit\": 0, \"elevation\": 0, \"distance\": 4, \"target\": [0, 1, 0], \"fov\": 45}, {\"t\": 5.125, \"orbit\": 90, \"elevation\": 0, \"distance\": 4, \"target\": [0, 1, 0], \"fov\": 45}]}",
+      "width": 576,
+      "height": 1024,
+      "frames": 124,
+      "fps": 24
+    }
+  },
+  "1001": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": [
+        "1000",
+        1
+      ],
+      "filename_prefix": "h3_camera_compare/guide",
+      "format": "auto"
+    }
+  }
+}

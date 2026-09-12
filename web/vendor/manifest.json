@@ -1,0 +1,22 @@
+{
+  "three.module.mjs": {
+    "source": "https://raw.githubusercontent.com/mrdoob/three.js/r169/build/three.module.js",
+    "source_sha256": "0a3368c165eea773490aec7b77c22de70e3eac288503409256fdbf4d12578416",
+    "local_sha256": "0a3368c165eea773490aec7b77c22de70e3eac288503409256fdbf4d12578416"
+  },
+  "OrbitControls.mjs": {
+    "source": "https://raw.githubusercontent.com/mrdoob/three.js/r169/examples/jsm/controls/OrbitControls.js",
+    "source_sha256": "80efaadea4f8a636a65fb0bd08bfef62f3d93a0bb94e2e7500f23176c5c07f4e",
+    "local_sha256": "09684ac0d9c86982b43068501bfe109513915f11bb14312e9b3cd5c9c937a316"
+  },
+  "TransformControls.mjs": {
+    "source": "https://raw.githubusercontent.com/mrdoob/three.js/r169/examples/jsm/controls/TransformControls.js",
+    "source_sha256": "16b632c99d5d4f772acbd82f0b14911a5acdbefc4e49cb47da9aa4176620fcd8",
+    "local_sha256": "784e773d22f0ee26a6602d80e7734acbe385826cae0b1f84aa2e65c62b0e2e53"
+  },
+  "THREE-LICENSE.txt": {
+    "source": "https://raw.githubusercontent.com/mrdoob/three.js/r169/LICENSE",
+    "source_sha256": "4c40a1ef62450b857c3b2aaf294936304cd552d965fbcd9d32d4c5bcf4ba4454",
+    "local_sha256": "4c40a1ef62450b857c3b2aaf294936304cd552d965fbcd9d32d4c5bcf4ba4454"
+  }
+}

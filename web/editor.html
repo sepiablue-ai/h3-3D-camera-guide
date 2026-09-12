@@ -1,0 +1,14 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>H3 Camera Guide Editor</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#151d29;color:#e6edf6;font:12px system-ui}button,input,select{font:inherit}button{background:#26384d;border:1px solid #4c6480;border-radius:5px;color:white;padding:5px 8px;cursor:pointer}button:hover{background:#355373}input{accent-color:#63dbca}input[type=number]{width:68px;background:#101722;color:white;border:1px solid #50617a;padding:3px}header{padding:9px 12px;display:flex;justify-content:space-between}strong{color:#7ae6d6}.views{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:0 8px}.view{height:280px;position:relative;overflow:hidden;border:1px solid #435469;border-radius:7px}.view canvas{width:100%;height:100%;display:block}.label{position:absolute;top:5px;left:7px;color:white;background:#132030ba;padding:3px;pointer-events:none}.panel{padding:7px 10px}.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:5px 0}.control{display:grid;grid-template-columns:88px 1fr 72px;align-items:center;gap:6px;margin:4px 0}.control input[type=range]{width:100%}#timeline{width:100%}#keys{display:flex;gap:5px;overflow-x:auto;padding:3px 0}#keys button.active{border-color:#78ffe4;background:#245b5c}small{color:#acbed1}#status{color:#ffd286;min-height:18px}#time{width:74px}
+</style></head><body>
+<header><strong>H3 · 3D CAMERA GUIDE</strong><span>RGB / local CPU export</span></header>
+<div class="views"><div class="view" id="world"><span class="label">編集ビュー · XYZドラッグ</span></div><div class="view" id="preview"><span class="label">出力構図プレビュー</span></div></div>
+<div class="panel">
+<div class="row"><button id="play">▶ 再生</button><button id="stop">■ 停止</button><label>秒 <input id="time" type="number" min="0" step="0.01" value="0"></label><span id="duration"></span><button id="add">＋ キー保存 / 更新</button><button id="delete">キー削除</button></div>
+<input id="timeline" aria-label="タイムライン" type="range" min="0" max="5.125" step="0.001" value="0"><div id="keys"></div>
+<div id="controls"></div>
+<div class="row"><label>注視点 X <input id="tx" type="number" step="0.1" min="-20" max="20" value="0"></label><label>Y <input id="ty" type="number" step="0.1" min="-20" max="20" value="1"></label><label>Z <input id="tz" type="number" step="0.1" min="-20" max="20" value="0"></label><button id="preset">天井 → 正面 → 右へ</button></div>
+<small>編集ビューの空白ドラッグ: 視点回転 / ホイール: 拡大。色付き矢印: 出力カメラ移動。変更後は「キー保存」。Orbitは連続角度（0→360で一周）。</small>
+<div id="status" role="status"></div>
+</div><script type="module" src="./editor.mjs"></script></body></html>

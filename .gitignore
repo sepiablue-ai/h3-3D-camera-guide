@@ -1,0 +1,18 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.DS_Store
+Thumbs.db
+
+# Local evidence and machine-specific workflow / ローカル検証・個人用workflow
+/validation/
+/MiniMax_H3_3D_Camera_Guide.json
+/outputs/
+/input/
+/models/
+*.log
+.env
+.env.*
+!.env.example

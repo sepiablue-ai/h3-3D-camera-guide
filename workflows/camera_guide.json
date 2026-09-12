@@ -1,0 +1,205 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "revision": 0,
+  "last_node_id": 1001,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1001,
+      "type": "SaveVideo",
+      "pos": [
+        940,
+        130
+      ],
+      "size": [
+        308,
+        106
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "ビデオ",
+          "name": "video",
+          "type": "VIDEO",
+          "link": 2
+        },
+        {
+          "localized_name": "ファイル名プレフィックス",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "フォーマット",
+          "name": "format",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "コーデック",
+          "name": "codec",
+          "shape": 7,
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "widget": {
+            "name": "codec"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "video",
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {},
+      "widgets_values": [
+        "h3_camera_guide/rgb",
+        "auto",
+        "auto",
+        "auto"
+      ]
+    },
+    {
+      "id": 1000,
+      "type": "H3CameraGuide",
+      "pos": [
+        100,
+        130
+      ],
+      "size": [
+        740,
+        850
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "camera_state",
+          "name": "camera_state",
+          "type": "STRING",
+          "widget": {
+            "name": "camera_state"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "width",
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "height",
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "frames",
+          "name": "frames",
+          "type": "INT",
+          "widget": {
+            "name": "frames"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "fps",
+          "name": "fps",
+          "type": "FLOAT",
+          "widget": {
+            "name": "fps"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "rgb_frames",
+          "name": "rgb_frames",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "localized_name": "video",
+          "name": "video",
+          "type": "VIDEO",
+          "links": [
+            2
+          ]
+        },
+        {
+          "localized_name": "fps",
+          "name": "fps",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "localized_name": "camera_json",
+          "name": "camera_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "H3CameraGuide"
+      },
+      "widgets_values": [
+        "{\"version\": 1, \"keys\": [{\"t\": 0, \"orbit\": 0, \"elevation\": 85, \"distance\": 4, \"target\": [0, 1, 0], \"fov\": 45}, {\"t\": 1, \"orbit\": 0, \"elevation\": 0, \"distance\": 4, \"target\": [0, 1, 0], \"fov\": 45}, {\"t\": 5.125, \"orbit\": 90, \"elevation\": 0, \"distance\": 4, \"target\": [0, 1, 0], \"fov\": 45}]}",
+        576,
+        1024,
+        124,
+        24
+      ],
+      "widgets_values_named": {
+        "camera_state": "{\"version\": 1, \"keys\": [{\"t\": 0, \"orbit\": 0, \"elevation\": 85, \"distance\": 4, \"target\": [0, 1, 0], \"fov\": 45}, {\"t\": 1, \"orbit\": 0, \"elevation\": 0, \"distance\": 4, \"target\": [0, 1, 0], \"fov\": 45}, {\"t\": 5.125, \"orbit\": 90, \"elevation\": 0, \"distance\": 4, \"target\": [0, 1, 0], \"fov\": 45}]}",
+        "width": 576,
+        "height": 1024,
+        "frames": 124,
+        "fps": 24
+      },
+      "color": "#443066",
+      "bgcolor": "#211635"
+    }
+  ],
+  "links": [
+    [
+      2,
+      1000,
+      1,
+      1001,
+      0,
+      "VIDEO"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.65,
+      "offset": [
+        60,
+        60
+      ]
+    }
+  },
+  "version": 0.4
+}
