@@ -12,6 +12,7 @@ Thumbs.db
 /outputs/
 /input/
 /models/
+/note_article/
 *.log
 .env
 .env.*
