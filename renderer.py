@@ -4,11 +4,13 @@ Same sphere/cylinder geometry as the Three.js preview. Perspective-correct
 z-buffering, near-plane clipping and flat Lambert shading. GPU stays free for H3.
 """
 import math
+from functools import lru_cache
 import numpy as np
 from .camera import basis, sample
 
 
-def geometry():
+@lru_cache(maxsize=4)
+def geometry(subject_shape="mannequin", floor_cues="plain"):
     verts, faces, colors = [], [], []
 
     def mesh(v, f, color):
@@ -48,26 +50,33 @@ def geometry():
         sphere(b,radius,color)
 
     body = [0.18, 0.42, 0.60]
-    bone([0,0.92,0],[0,1.50,0],0.11,body)
-    bone([-0.27,1.43,0],[0.27,1.43,0],0.075,body)
-    for sign in [-1,1]:
-        bone([sign*.27,1.43,0],[sign*.42,1.10,0],.055,body)
-        bone([sign*.42,1.10,0],[sign*.50,.83,.08],.05,body)
-        bone([sign*.12,.95,0],[sign*.19,.50,0],.075,body)
-        bone([sign*.19,.50,0],[sign*.23,.10,0],.06,body)
-        bone([sign*.23,.10,0],[sign*.23,.08,.18],.065,body)
-    sphere([0,1.77,0],.20,[.80,.63,.43])
-    sphere([0,1.77,.195],.055,[.30,.22,.17])  # nose identifies front
+    if subject_shape == "ball":
+        sphere([0,1,0],.95,body)
+    else:
+        bone([0,0.92,0],[0,1.50,0],0.11,body)
+        bone([-0.27,1.43,0],[0.27,1.43,0],0.075,body)
+        for sign in [-1,1]:
+            bone([sign*.27,1.43,0],[sign*.42,1.10,0],.055,body)
+            bone([sign*.42,1.10,0],[sign*.50,.83,.08],.05,body)
+            bone([sign*.12,.95,0],[sign*.19,.50,0],.075,body)
+            bone([sign*.19,.50,0],[sign*.23,.10,0],.06,body)
+            bone([sign*.23,.10,0],[sign*.23,.08,.18],.065,body)
+        sphere([0,1.77,0],.20,[.80,.63,.43])
+        sphere([0,1.77,.195],.055,[.30,.22,.17])  # nose identifies front
     # Only a plain finite floor: no grid/axis/path exists in this renderer.
     mesh([[-6,0,-6],[-6,0,6],[6,0,6],[6,0,-6]],[[0,1,2],[0,2,3]],[.72,.74,.77])
+    if floor_cues == "markers":
+        # Physical colored floor inlays, never editor axes, grids or text.
+        for x,z,c in [(-.72,1.25,[.7,.25,.12]),(.72,1.25,[.2,.55,.3]),(-.72,-1.25,[.2,.3,.65]),(.72,-1.25,[.8,.6,.15])]:
+            mesh([[x-.2,.008,z-.2],[x-.2,.008,z+.2],[x+.2,.008,z+.2],[x+.2,.008,z-.2]],[[0,1,2],[0,2,3]],c)
     return np.array(verts,np.float32), np.array(faces), np.array(colors,np.float32)
 
 
 GEOMETRY = geometry()
 
 
-def render_frame(k, width, height):
-    vertices, faces, colors = GEOMETRY
+def render_frame(k, width, height, subject_shape="mannequin", floor_cues="plain"):
+    vertices, faces, colors = geometry(subject_shape, floor_cues)
     pos, right, up, forward = map(np.array, basis(k))
     view = (vertices-pos) @ np.array([right,up,forward]).T
     focal = height / (2*math.tan(math.radians(k["fov"])/2))
@@ -114,10 +123,10 @@ def render_frame(k, width, height):
     return rgb
 
 
-def render_sequence(state, width, height, frames, fps, progress=None):
+def render_sequence(state, width, height, frames, fps, progress=None, subject_shape="mannequin", floor_cues="plain"):
     result = np.empty((frames,height,width,3),np.float32)
     for i in range(frames):
-        result[i] = render_frame(sample(state,i/fps),width,height)
+        result[i] = render_frame(sample(state,i/fps),width,height,subject_shape,floor_cues)
         if progress:
             progress(i+1)
     return result

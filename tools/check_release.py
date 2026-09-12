@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
-required = ["__init__.py", "nodes.py", "camera.py", "renderer.py", "README.md",
+required = ["__init__.py", "nodes.py", "camera.py", "camera_prompt.py", "renderer.py", "README.md",
             "LICENSE", "THIRD_PARTY_NOTICES.md", ".gitignore", ".gitattributes",
             "requirements.txt", "web/extension.js", "web/editor.html", "web/editor.mjs", "web/camera.mjs"]
 public = [ROOT / p for p in required]
@@ -47,8 +47,9 @@ for path in (ROOT/'workflows').glob('*.json'):
         assert links[inp['link']][1:3] == [1000, 0]
         for nid in [901, 902, 903]:
             assert nodes[nid]['widgets_values_named']['image'] == f'reference_{nid-900}.png'
-        prompt = nodes[131]['widgets_values_named']['prompt']
-        assert '<Video 1>' in prompt and '85 degrees' not in prompt and '1.00 seconds' not in prompt
+        prompt_input = next(i for i in nodes[131]['inputs'] if i['name'] == 'prompt')
+        assert links[prompt_input['link']][1:3] == [1002, 0]
+        assert nodes[1002]['type'] == 'H3CameraPrompt'
 
 ignore = (ROOT/'.gitignore').read_text()
 assert '/validation/' in ignore and '/MiniMax_H3_3D_Camera_Guide.json' in ignore

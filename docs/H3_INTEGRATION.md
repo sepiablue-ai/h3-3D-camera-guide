@@ -1,5 +1,39 @@
 # MiniMax H3 接続 / MiniMax H3 integration
 
+## ルールベースのカメラ文 / Rule-based camera text
+
+追加ノード `H3CameraPrompt` で、ガイドの `camera_json` とユーザーの場面・動作文を合成できます。人物の動作をカメラ文に混ぜず、全キー区間の周回・上下移動・距離・FOV・注視点の変化を記述します。`combined_prompt` をRef2VAへ接続してください。
+
+`H3CameraPrompt` combines guide camera JSON with user-authored scene/action text. It describes every key interval's orbit, elevation, distance, FOV and aim changes without adding character actions. Connect `combined_prompt` to Ref2VA.
+
+- 動画併用 / Video plus text: [minimax_h3_ref2va.json](../workflows/minimax_h3_ref2va.json)
+- 動画なし / Camera text without guide video: [minimax_h3_camera_prompt_only.json](../workflows/minimax_h3_camera_prompt_only.json)
+
+両方とも参照画像は使います。「動画なし」はT2VAへの変更ではなく、Ref2VAの動画参照だけを外した比較です。
+
+Both workflows still use identity pictures. “Without video” removes only the guide-video reference; it does not switch the model to T2VA.
+
+## カフェ着座の比較 / Seated cafe comparison
+
+同じseed 42、参照画像3枚、576×1024、124フレーム/24fps、既存Fused Ref2VA 4ステップ・SLA構成で各1本生成。場面文・軌道・人物指定は共通。動画入力と、それに対応するVideoラベルの説明だけを変更しました。
+
+One clip per mode, with seed 42, the same three identity images, 576×1024, 124 frames at 24fps, and the existing fused Ref2VA four-step SLA setup. Scene, trajectory and identity instructions were shared. Only video conditioning and its corresponding reference-label clauses differed.
+
+| 条件 / Mode | ComfyUI実行時間 / Execution | サンプルフレームでの観察 / Sampled-frame observation |
+|---|---:|---|
+| カメラ文のみ / Camera text only | 219.73 s | 俯瞰→正面→横、着座してカップを口へ運ぶ / Overhead to frontal to side; seated cup-to-mouth action |
+| カメラ文＋動画 / Camera text + guide video | 235.00 s | 俯瞰→正面→横、着座してカップを口へ運ぶ / Overhead to frontal to side; seated cup-to-mouth action |
+
+両方で1秒時点はまだ上方からの視点、2.5秒時点では正面でした。指定の「1秒で正面」は未達です。今回のseedでは動画なしでも順序は表現できましたが、動画参照の一般的な要否・優劣や角度精度はこの2本だけでは決められません。上記は目視観察であり、3Dカメラ姿勢の復元計測やユーザー評価ではありません。動画と音声は全デコード検査済みです。
+
+Both remained above the subject at 1s and were frontal by 2.5s, missing the requested one-second arrival. This seed worked without video conditioning, but two clips do not establish a general winner or angular accuracy. Observations are qualitative, not recovered camera measurements or user ratings. Video and audio passed full decoding.
+
+
+---
+
+以下には旧固定プロンプトの検証履歴も含まれます。 / The sections below also retain historical fixed-prompt experiments.
+
+
 ## ガイド単体とH3の違い / Guide node versus H3
 
 **日本語:** ガイド単体はこのノードとComfyUI標準Save Videoだけで動きます。[H3統合テンプレート](../workflows/minimax_h3_ref2va.json) は、別途H3を動かせる環境が必要です。このリポジトリはモデルや追加カスタムノードをインストールしません。
@@ -10,7 +44,7 @@
 
 | ノード / Node | 検証環境での提供元 / Provider in the tested environment |
 |---|---|
-| `H3CameraGuide` | このリポジトリ / This repository |
+| `H3CameraGuide`, `H3CameraPrompt` | このリポジトリ / This repository |
 | `MiniMaxH3ReferenceToVideo`, `MiniMaxH3SigmaShift` | ComfyUI `comfy_extras.nodes_minimax_h3` |
 | `MiniMaxChunkFeedForward` | ComfyUI-KJNodes |
 | `H3SLAAttention` | ComfyUI-PlagueKind-Nodes |
@@ -41,9 +75,9 @@ H3 3D Camera Guide.video ───────> Save Video (RGB Camera Guide)
 Load Image × 3 ────────────────> MiniMaxH3ReferenceToVideo.ref_images.*
 ```
 
-**日本語:** 「RGB Camera Guide」は保存用ノードで、その出力端子はH3へ接続しません。画像バッチを3DカメラノードからH3へ直接渡します。保存済みガイドを再利用する場合は、Load Video → Get Video Componentsのimages出力をH3へ接続してください。
+**日本語:** 「RGB Camera Guide」は保存用ノードで、その出力端子はH3へ接続しません。画像バッチを3DカメラノードからH3へ直接渡します。保存済みガイドは、3D Camera Guideのsource_modeをreuse_videoにし、video_pathにパスを指定すると同じ接続のまま再利用できます。Load VideoのVIDEOをexisting_videoへ接続する方法もあります。
 
-**English:** “RGB Camera Guide” is a save node; its output is not connected to H3. The image batch goes directly from the 3D camera node to H3. To reuse a saved guide, connect Load Video → Get Video Components → images to H3 instead.
+**English:** “RGB Camera Guide” is a save node; its output is not connected to H3. The image batch goes directly from the 3D camera node to H3. To reuse a saved guide with the same wiring, select reuse_video on the 3D Camera Guide node and set video_path. Alternatively, connect a Load Video VIDEO output to existing_video.
 
 **日本語:** 初期値は576×1024、124フレーム、24fps、seed 42固定、res_multistep/simpleの4stepです。画像3枚は同一人物の参照へ差し替えてください。ガイド側の寸法・長さを変えたら、H3側のwidth/height/lengthも手動で合わせます。H3動画参照は24fpsで扱われます。検証した実装は17n+5フレームに切り詰め、124はその条件を満たします。
 
@@ -51,13 +85,34 @@ Load Image × 3 ────────────────> MiniMaxH3Refer
 
 ## 固定プロンプト / Fixed prompt
 
-**日本語:** 「参照動画のカメラ・被写体の動き、構図、距離、タイミングに従う」と指示しています。人物の外観は画像参照から取り、棒人間の見た目は転写しないよう指定しています。軌道の時刻や角度をpromptへ手入力する必要はありません。現在のガイドの人型は固定ポーズです。
+**日本語:** 「参照動画のカメラの動き、構図、距離、タイミングだけに従う」と指示しています。人物の外観は画像参照から取り、棒人間の見た目は転写しないよう指定しています。軌道の時刻や角度をpromptへ手入力する必要はありません。人物の姿勢・動作は本文から指定します。固定ポーズの人型と「座る」などを競合させないため、ガイドの姿勢は転写しない指示に変更しました。
 
-**English:** The prompt instructs H3 to follow the reference video's camera/subject motion, framing, distance and timing, while taking appearance from the image references and not copying the mannequin's appearance. There is no need to enter trajectory times or angles in the prompt. The current guide mannequin has a fixed pose.
+**English:** The prompt instructs H3 to follow the reference video's camera motion only, framing, distance and timing, while taking appearance from the image references and not copying the mannequin's appearance. There is no need to enter trajectory times or angles in the prompt. Subject pose and action come from the scene text; the guide proxy pose is explicitly excluded to avoid conflicts such as standing versus sitting.
 
-**日本語:** 固定prompt版はworkflowの読み込み・接続を確認済みですが、このpromptでの追加生成は行っていません。過去の明示的な軌道promptによる比較結果とは区別してください。Ref2VAによる厳密なカメラ追従や一般的な成功率は未確認です。
+## 旧カフェ座位の追従検証 / Seated cafe validation (2026-09-12)
 
-**English:** Loading and wiring of the fixed-prompt workflow have been verified, but no additional generation was performed with that prompt. Keep this separate from the earlier explicit-trajectory-prompt comparison. Exact camera following and general success rates are not established.
+**日本語:** 「座ってコーヒーを飲む」場面で4条件を各1本実生成しました。4本は同一のカメラ専用の固定prompt・seed 42・参照画像3枚・モデル・576×1024/124f/24fps・4stepを使用。軌道の時刻や角度はpromptに記述していません。下表は抽出フレームの定性的な観察であり、復元カメラ角度の測定やユーザーによる品質評価ではありません。
+
+**English:** Generated one video for each of four seated coffee-drinking conditions. All four used the same camera-only fixed prompt, seed 42, three image references, model, 576×1024/124f/24fps and four steps. The prompt contains no trajectory angles or times. The table reports qualitative frame inspection, not recovered camera-angle measurements or user quality ratings.
+
+| 条件 / Condition | 変更 / Change | 観察 / Observation | 実行時間 / Wall time |
+|---|---|---|---|
+| A | 既存人型動画＋カメラ専用prompt / Original mannequin clip + camera-only prompt | 元の結果より横の視点変化が明確。天井視点なし / Clearer lateral change than original; no overhead opening | 230.29 s |
+| B | Aの人型を球へ / Replace mannequin with ball | Aより横の変化が弱い。天井視点なし / Weaker lateral change than A; no overhead opening | 230.33 s |
+| C | Bに床の4色の目印 / Add four colored floor cues to B | Bより横の変化が明確。天井視点なし / Clearer lateral change than B; no overhead opening | 225.31 s |
+| D | Cの降下を1秒から2.5秒へ / Extend C descent from 1 to 2.5 s | 天井視点は改善せず。横の変化は残る / Overhead opening still absent; lateral change remains | 230.27 s |
+
+**日本語:** 人型の立ち姿を転写する指定と「座る」は文章上で競合していました。その指定を除き、人物の動作は本文、カメラは動画から取るよう修正しました。ただし、球への変更・今回の床模様・降下の低速化では天井視点を回復できず、3仮説のいずれかを唯一の原因と断定できません。改善済みなのは参照の役割分担と一部の横方向の動きで、天井→正面の追従は未解決です。
+
+**English:** Transferring the standing proxy pose conflicts with the seated action in the text. The revised prompt takes action from text and camera movement from video. However, replacing the proxy, adding these floor cues and slowing the descent did not recover the overhead opening. None of the three hypotheses is established as the sole cause. Reference roles and some lateral motion improved; overhead-to-front tracking remains unresolved.
+
+**日本語:** 実装上、H3のVAEには全124フレーム、Qwenには2fpsで抽出した11フレームが渡ります。「H3が2fpsしか見ない」わけではありません。配線不良やガイド未入力は確認されませんでした。全条件でSLA sparsity 0.9 / reference_protection Offを維持しました。この参照保護設定の影響は未検証の別候補であり、今回の原因と断定したり、無検証で設定を変更したりしていません。
+
+**English:** The inspected H3 implementation feeds all 124 frames to the VAE and 11 frames sampled at 2 fps to Qwen. H3 does not receive only 2 fps overall. No missing guide connection was found. All conditions retained SLA sparsity 0.9 / reference_protection Off. The effect of reference protection remains an untested candidate, not an established cause or an unvalidated workflow change.
+
+**日本語:** 単一seedの観察です。元のユーザー生成は生のRGB、Aは保存済みMP4の再読み込みなので、元結果とAは厳密なpromptのみの比較ではありません。球はシルエット・画面占有率も変えます。Dは全長を固定したため、後半の周回時間も短くなっています。生成4本と入力ガイドは全フレームをデコード検証済みです。入力動画は再描画せず、球のガイド3本は各16〜17秒で一度だけ作成しました。個人用画像・動画・実行記録は配布物に含めません。
+
+**English:** This is a single-seed observation. The original user run consumed raw RGB while A loaded a saved MP4, so that comparison is not a strict prompt-only ablation. A ball also changes silhouette and screen coverage. D keeps total duration fixed and therefore shortens the later orbit. All four outputs and input guides passed complete decoding. H3 reused the input clips without rerendering; the three ball guides were rendered once, taking 16–17 seconds each. Personal images, videos and raw receipts are excluded from distribution.
 
 ## ライセンス / Licensing
 

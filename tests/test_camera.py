@@ -7,6 +7,7 @@ import types
 import unittest
 import shutil
 import subprocess
+from unittest.mock import patch
 import numpy as np
 
 root = Path(__file__).resolve().parents[1]
@@ -16,6 +17,32 @@ from guide.renderer import render_frame
 
 
 class CameraTests(unittest.TestCase):
+    def test_ball_and_floor_cues(self):
+        front=sample(DEFAULT,1)
+        ball=render_frame(front,144,256,'ball','plain')
+        human=render_frame(front,144,256,'mannequin','plain')
+        self.assertGreater(np.abs(ball-human).mean(),.02)
+        top=sample(DEFAULT,0)
+        plain=render_frame(top,144,256,'ball','plain')
+        marked=render_frame(top,144,256,'ball','markers')
+        self.assertGreater(np.abs(plain-marked).sum(),20)
+
+    def test_reuse_bypasses_renderer_and_ignores_editor_settings(self):
+        import torch
+        from guide.nodes import H3CameraGuide
+        data=torch.zeros((5,16,24,3))
+        video=types.SimpleNamespace(get_dimensions=lambda:(24,16),get_frame_count=lambda:5,
+            get_components=lambda:types.SimpleNamespace(images=data,frame_rate=24))
+        modules={'comfy_api.latest':types.SimpleNamespace(InputImpl=None,Types=None),
+                 'comfy.utils':types.SimpleNamespace(ProgressBar=None),
+                 'comfy':types.ModuleType('comfy'), 'comfy.model_management':types.ModuleType('comfy.model_management')}
+        with patch.dict(sys.modules,modules),patch('guide.nodes.render_sequence',side_effect=AssertionError('Must not render')):
+            images,out,fps,info=H3CameraGuide().generate('invalid unused state',1920,1920,720,1,source_mode='reuse_video',existing_video=video)
+            self.assertEqual(tuple(images.shape),(5,16,24,3));self.assertIs(out,video);self.assertEqual(fps,24)
+            self.assertIsNone(json.loads(info)['camera_state'])
+            video.get_frame_count=lambda:721
+            with self.assertRaises(ValueError):H3CameraGuide().generate('',1,1,1,1,source_mode='reuse_video',existing_video=video)
+
     @unittest.skipUnless(shutil.which('node'), 'Node.js is only needed for development parity tests')
     def test_frontend_backend_contract(self):
         code="import {DEFAULT,sample,basis} from './web/camera.mjs'; console.log(JSON.stringify([0,.5,1,3,5.125].map(t=>({pose:sample(DEFAULT,t),basis:basis(sample(DEFAULT,t))}))));"

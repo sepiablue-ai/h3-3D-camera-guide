@@ -12,7 +12,8 @@
 | XYZドラッグ、Orbit・Elevation・Distance・FOV・注視点の調整 | XYZ dragging; orbit, elevation, distance, FOV and target controls |
 | タイムライン、キー保存、再生、一時停止、停止、スクラブ | Timeline, keyframes, playback, pause, stop and scrubbing |
 | workflowにカメラ軌道を保存・復元 | Camera state persists in saved workflows |
-| 人型と無地の床だけのRGBフレーム列・VIDEO出力 | RGB frame batches and VIDEO containing only the mannequin and plain floor |
+| 人型または球体と床のRGBフレーム列・VIDEO出力 | RGB frames and VIDEO with a mannequin or ball and floor |
+| 既存動画の再利用、任意の床の色付き目印 | Reuse existing videos; optional colored floor landmarks |
 | 編集用カメラ・軌道・グリッド・軸・UIは出力に含まない | Editor cameras, paths, grids, axes and UI are excluded from renders |
 | Three.js同梱、実行時CDN不要、追加Pythonパッケージ不要 | Vendored Three.js; no runtime CDN or additional Python packages |
 
@@ -62,22 +63,56 @@
 6. **日本語:** ComfyUIの実行ボタンを押すと、保存済みキーからRGB動画を生成します。
    **English:** Run the workflow to render RGB video from the saved keys.
 
+## 形状・再利用 / Shape and reuse
+
+| 入力 / Input | 操作 / Behavior |
+|---|---|
+| `subject_shape` | `mannequin` = 人型 / mannequin、`ball` = 球体 / ball |
+| `floor_cues` | `plain` = 無地 / plain、`markers` = 床の4色の小さな目印 / four colored floor inlays |
+| `source_mode` | `render` = キーから生成 / render keys、`reuse_video` = 既存動画を読み込む / load an existing video |
+| `video_path` | 再利用するローカル動画の絶対パス、またはComfyUIの注釈付きファイル名 / Absolute local path or ComfyUI annotated filename |
+| `existing_video` | 任意のVIDEO入力。接続時はvideo_pathより優先 / Optional VIDEO socket; takes precedence over video_path |
+
+**日本語:** 一度Save Videoで保存したガイドのパスを `video_path` へ設定し、`source_mode = reuse_video` にすると、以後はCPU描画を省いて同じ動画をH3へ渡せます。再利用時はキー・形状・width/height/frames/fpsの設定を使わず、元動画の寸法・フレーム数・fpsを保持します。H3側は自動変更しません。24fpsの動画を選び、寸法と長さをH3側に合わせてください。誤表示を避けるため再利用時は3Dプレビューを隠します。ファイルが無い場合はエラーになり、勝手に再生成しません。
+
+**English:** Save a guide once, enter its path in `video_path`, then choose `source_mode = reuse_video` to skip CPU rendering on subsequent H3 runs. Reuse ignores keys, shape and width/height/frames/fps widgets, preserving the source video's dimensions, frame count and fps. It does not update H3 settings automatically. Select a 24 fps clip and match H3 dimensions and length. The editor preview is hidden in reuse mode to avoid showing an unrelated trajectory. A missing file raises an error without silently rerendering.
+
+**日本語:** 球体は「立つ／座る」の姿勢競合を減らすための選択肢ですが、回転対称なので球だけでは周回方向を読み取りにくくなります。`markers` は向きの手掛かりとなる床の実物模様で、出力動画にも映ります。編集用グリッドやXYZ軸は出力しません。
+
+**English:** A ball removes the standing-versus-sitting pose cue, but its rotational symmetry makes orbit direction harder to infer. `markers` adds physical floor patterns as orientation cues; these appear in the output. Editor grids and XYZ axes remain excluded.
+
 ## 出力と接続 / Outputs and connections
+
+### カメラ専用プロンプト / Camera-only prompt
+
+`H3 Camera Prompt / カメラ専用プロンプト` は保存された全キーフレーム区間をCPUのルールで英文に変換します。LLM・外部API・追加モデルは不要です。特定のプリセット判定は使いません。
+
+The prompt node compiles every saved trajectory interval on the CPU, without an LLM, external API or extra model. It does not match a fixed set of camera presets.
+
+- `camera_json` → 合成ノード → `combined_prompt` → Ref2VAのprompt。既存の `rgb_frames` → Ref2VA参照動画の接続も維持。 / Connect camera JSON to the composer and its combined prompt to Ref2VA; retain the existing guide-frame connection.
+- `scene_prompt` は人物の動作・服装・場面、`identity_prompt` は参照画像と人物の対応。入力文は保持し、カメラ生成文には人物の姿勢・視線・手足の動きを追加しません。 / Scene text controls actions, clothing and setting; identity text defines picture references. User text is preserved; generated camera text adds no body, gaze or limb actions.
+- `use_reference_video=true` は動画参照あり。falseで比較する場合はH3側の動画参照入力も外してください。このスイッチ単独では配線は変更しません。 / Set true when the video is connected. For a text-only camera comparison, set false AND remove the H3 video-reference input; the switch does not rewire the graph.
+- 周回の方向と複数回転、上下の弧、接近・後退、FOVによるズーム、注視点とカメラの平行移動、同時変化、停止、反転を各区間の時刻で記述。時間とfpsはガイド出力が正本です。 / Covers signed and multiple orbits, elevation arcs, dolly, FOV zoom, aim/rig translation, combined changes, holds and reversals, with timing taken from the guide output.
+- 通常のSave Videoで保存したガイドは、`video_path`から再利用する際に一致する保存メタデータがあれば軌道を復元します。編集・リネーム・メタデータ削除済みの動画や外部VIDEO入力など、軌道が確認できない場合はプロンプト生成だけがエラーになります。動画再利用自体は残っています。 / Matching native Save Video metadata can restore a reused guide's trajectory via video_path. Unknown, renamed or metadata-stripped clips and external VIDEO sockets are not motion-estimated; prompt compilation fails clearly while ordinary video reuse remains available.
+
+**制約 / Limits:** 汎用性は現在の3D UIが表現できる軌道に対するものです。ロール・カットなどUIに存在しない自由度は生成しません。一般的なカメラ指示の競合はエラーにしますが、任意の自然言語の意味を完全に判定する仕組みではありません。英文のカメラ指定はH3への指示であり、幾何学的な拘束や追従保証ではありません。
+
+Generality covers the trajectories representable by this editor; unsupported roll or cuts are not invented. Common camera-text conflicts raise an error, but semantic conflict detection is heuristic. Camera language instructs H3; it is not a geometric constraint or a guarantee of adherence.
 
 | 出力 / Output | 型 / Type | 用途 / Use |
 |---|---|---|
 | `rgb_frames` | IMAGE | H3の参照動画入力、画像プリプロセッサ / H3 reference-video input or image preprocessors |
 | `video` | VIDEO | 標準Save Videoへ接続 / Connect to standard Save Video |
 | `fps` | FLOAT | フレームレート / Frame rate |
-| `camera_json` | STRING | 保存されたキーのJSON / Serialized camera keyframes |
+| `camera_json` | STRING | キー・フレーム数・fps。再利用時は確認できた元の軌道も含む / Keys, frame count and fps; verified source trajectory when reusing |
 
 **日本語:** H3へは `rgb_frames` → `ref_videos.ref_video_0` を接続し、ガイドを **24fps** にします。統合workflowの「RGB Camera Guide」は確認用動画を保存するSave Videoです。その出力が未接続でも正常です。H3へは3Dカメラノードから直接フレーム列を渡しています。
 
 **English:** Connect `rgb_frames` to H3's `ref_videos.ref_video_0` and use **24 fps**. The integrated workflow's “RGB Camera Guide” node is a Save Video node for the guide preview. Its output may remain unconnected; H3 receives frames directly from the 3D camera node.
 
-**日本語:** H3テンプレートのpromptは「参照動画のカメラ・被写体の動きに従う」という固定指示です。軌道を変更するたびに時刻・角度・移動方向を書き直す必要はありません。人物や画風を変えたい場合は、その部分のpromptを調整してください。
+**日本語:** H3テンプレートのpromptは「参照動画のカメラの動きだけに従う」という固定指示です。軌道を変更するたびに時刻・角度・移動方向を書き直す必要はありません。人物や画風を変えたい場合は、その部分のpromptを調整してください。
 
-**English:** The H3 template uses a fixed instruction to follow the reference video's camera and subject motion. Changing the trajectory does not require rewriting timestamps, angles or directions. Adjust the identity/style instructions if you want a different subject or appearance.
+**English:** The H3 template uses a fixed instruction to follow only the reference video's camera motion. Changing the trajectory does not require rewriting timestamps, angles or directions. Adjust the identity/style instructions if you want a different subject or appearance.
 
 ## 仕様と制限 / Behavior and limitations
 
@@ -93,14 +128,18 @@
 | プレビューと出力は同じ形状・カメラ式。照明・色・AAは異なる | Preview and render share geometry/camera math; lighting, color and AA differ |
 | CPUレンダラーはRAMと時間を使用。1.8億画素上限、RGBテンソルだけで最大約2.16GB | CPU rendering takes time and RAM. Limit: 180 million pixels, up to ~2.16 GB for the RGB tensor alone |
 | 人型は固定ポーズ。Depth / Edge / Pose専用出力は未実装 | Mannequin has a fixed pose. Dedicated depth/edge/pose outputs are not implemented |
-| ControlNet実生成は未検証。RGBをdepth/pose条件と同一視しない | ControlNet generation is untested. RGB is not a depth/pose condition by itself |
+| 本リポジトリはRGB Ref2VA用。ControlNet連携なし | This repository targets RGB Ref2VA; no ControlNet integration |
 | Ref2VAはガイドへの厳密な追従を保証しない | Ref2VA does not guarantee exact trajectory following |
 
 ## 検証状況 / Validation status
 
-**日本語:** 実画面でXYZドラッグ、再生・スクラブ、キー編集、workflow保存・再読み込み、Save Video出力を確認済みです。JavaScript/Pythonのカメラ式一致を含む5件のテストが成功しました。過去の同一seed・prompt・参照画像によるH3各1本の比較では、初期視点と降下タイミングに部分的な改善を観察しましたが、厳密な軌道一致は未達でした。その比較は時刻・角度を記述した旧promptで行ったもので、今回同梱する固定promptの品質検証ではありません。検証用の人物画像・動画・ログは公開配布物に含めません。
+現在は15テスト（カメラ式、全区間のプロンプト生成、動画メタデータ復元、動作文の保持等）と配布ファイル検査を通過。従来の3D UI操作・保存復元確認に加え、新しい合成ノードの入力表示と配線を確認しています。
 
-**English:** Verified in the actual UI: XYZ dragging, playback/scrubbing, key editing, save/reload, and Save Video output. Five tests passed, including JavaScript/Python camera-math parity. An earlier single-seed H3 comparison with equal prompts and image references showed partial improvement in initial viewpoint and descent timing, but not exact trajectory following. That comparison used an older prompt containing explicit times and angles; it does not establish quality for the fixed prompt shipped here. Personal reference images, videos and raw logs are not part of the public distribution.
+Fifteen tests cover camera math, trajectory compilation, saved-video metadata recovery and action-text preservation; release checks pass. Existing 3D editing/save-reload checks are supplemented by the new composer's input and wiring checks.
+
+カフェで座って飲む場面を、同じseed・参照画像でカメラ文のみ／カメラ文＋動画の各1本生成しました。どちらも俯瞰→正面→横の順序と着座した飲む動作が出ましたが、指定の1秒での正面到達は未達です。一般的な動画参照の優劣は未確定です。条件・旧検証との区別は [H3接続と比較](docs/H3_INTEGRATION.md) を参照してください。
+
+One seated-coffee clip per mode used the same seed and identity references. Both camera-text-only and camera-text-plus-video produced overhead/front/side views with seated drinking, but missed the one-second frontal arrival. No general winner is established. See [H3 integration and comparisons](docs/H3_INTEGRATION.md). Personal reference images, generated media and raw logs are excluded from the public release.
 
 ## フォルダ構成 / Repository layout
 

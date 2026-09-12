@@ -1,1 +1,1 @@
-# No extra Python packages: uses ComfyUI's numpy, torch and native VIDEO API.
+# No extra Python packages: uses ComfyUI's numpy, torch, PyAV and native VIDEO API.

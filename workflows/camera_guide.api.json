@@ -6,7 +6,11 @@
       "width": 576,
       "height": 1024,
       "frames": 124,
-      "fps": 24
+      "fps": 24,
+      "subject_shape": "mannequin",
+      "floor_cues": "plain",
+      "source_mode": "render",
+      "video_path": ""
     }
   },
   "1001": {

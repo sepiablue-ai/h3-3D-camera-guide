@@ -778,7 +778,7 @@
           "name": "ref_videos.ref_video_0",
           "shape": 7,
           "type": "IMAGE",
-          "link": 48
+          "link": null
         },
         {
           "localized_name": "ref_video_1",
@@ -1522,9 +1522,7 @@
           "localized_name": "rgb_frames",
           "name": "rgb_frames",
           "type": "IMAGE",
-          "links": [
-            48
-          ]
+          "links": null
         },
         {
           "localized_name": "video",
@@ -1705,14 +1703,14 @@
       "widgets_values": [
         "Render <Subject 1> sitting at a cafe table, calmly drinking coffee from a mug or cup. She wears a casual short-sleeve T-shirt and blue jeans. Show a natural, relaxed mood, with subtle hand and upper-body movement as she lifts the cup and takes a sip. The cafe should feel warm and cozy, with a table, chair, and softly blurred cafe interior in the background. Keep the woman as the clear main subject.",
         "<Subject 1> is the same adult woman shown in <Picture 1>, <Picture 2>, and <Picture 3>. Preserve her identity, face and hairstyle.",
-        true,
+        false,
         "Quiet cafe ambience, faint background chatter and light cup sounds. No speech.",
         "None."
       ],
       "widgets_values_named": {
         "scene_prompt": "Render <Subject 1> sitting at a cafe table, calmly drinking coffee from a mug or cup. She wears a casual short-sleeve T-shirt and blue jeans. Show a natural, relaxed mood, with subtle hand and upper-body movement as she lifts the cup and takes a sip. The cafe should feel warm and cozy, with a table, chair, and softly blurred cafe interior in the background. Keep the woman as the clear main subject.",
         "identity_prompt": "<Subject 1> is the same adult woman shown in <Picture 1>, <Picture 2>, and <Picture 3>. Preserve her identity, face and hairstyle.",
-        "use_reference_video": true,
+        "use_reference_video": false,
         "soundscape": "Quiet cafe ambience, faint background chatter and light cup sounds. No speech.",
         "music": "None."
       }
@@ -1885,14 +1883,6 @@
       0,
       131,
       5,
-      "IMAGE"
-    ],
-    [
-      48,
-      1000,
-      0,
-      131,
-      7,
       "IMAGE"
     ],
     [

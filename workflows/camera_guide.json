@@ -79,7 +79,7 @@
       ],
       "size": [
         740,
-        850
+        960
       ],
       "flags": {},
       "order": 0,
@@ -129,6 +129,43 @@
             "name": "fps"
           },
           "link": null
+        },
+        {
+          "name": "subject_shape",
+          "type": "COMBO",
+          "widget": {
+            "name": "subject_shape"
+          },
+          "link": null
+        },
+        {
+          "name": "floor_cues",
+          "type": "COMBO",
+          "widget": {
+            "name": "floor_cues"
+          },
+          "link": null
+        },
+        {
+          "name": "source_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "source_mode"
+          },
+          "link": null
+        },
+        {
+          "name": "video_path",
+          "type": "STRING",
+          "widget": {
+            "name": "video_path"
+          },
+          "link": null
+        },
+        {
+          "name": "existing_video",
+          "type": "VIDEO",
+          "link": null
         }
       ],
       "outputs": [
@@ -167,14 +204,22 @@
         576,
         1024,
         124,
-        24
+        24,
+        "mannequin",
+        "plain",
+        "render",
+        ""
       ],
       "widgets_values_named": {
         "camera_state": "{\"version\": 1, \"keys\": [{\"t\": 0, \"orbit\": 0, \"elevation\": 85, \"distance\": 4, \"target\": [0, 1, 0], \"fov\": 45}, {\"t\": 1, \"orbit\": 0, \"elevation\": 0, \"distance\": 4, \"target\": [0, 1, 0], \"fov\": 45}, {\"t\": 5.125, \"orbit\": 90, \"elevation\": 0, \"distance\": 4, \"target\": [0, 1, 0], \"fov\": 45}]}",
         "width": 576,
         "height": 1024,
         "frames": 124,
-        "fps": 24
+        "fps": 24,
+        "subject_shape": "mannequin",
+        "floor_cues": "plain",
+        "source_mode": "render",
+        "video_path": ""
       },
       "color": "#443066",
       "bgcolor": "#211635"
