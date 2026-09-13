@@ -6,6 +6,8 @@
 *.md text eol=lf
 *.json text eol=lf
 *.ps1 text eol=crlf
+*.mp4 binary
+*.jpg binary
 LICENSE text eol=lf
 web/vendor/THREE-LICENSE.txt -text
 web/vendor/*.mjs -text

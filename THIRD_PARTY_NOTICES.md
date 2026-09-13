@@ -30,3 +30,9 @@
 **日本語:** これらはUIや接続方式の設計上の参考です。これらのリポジトリのソースファイルは本配布物にコピーしていません。上記のThree.jsは別途その上流から取得しています。
 
 **English:** These projects informed the UI and integration design. Their source files are not copied into this distribution. The vendored Three.js files were obtained separately from their own upstream.
+
+## 公開チュートリアル / Published tutorial
+
+**日本語:** `docs/media/` のMP4とプレビュー画像はデモ用メディアです。コード・ドキュメントのMIT許諾とは分けて扱います。ComfyUIの画面収録と選択した既存の生成例を含みます。[メディアの権利・条件](docs/media/README.md)を参照してください。
+
+**English:** The MP4 and preview image in `docs/media/` are demonstration media, separate from the code/documentation MIT grant. They contain ComfyUI screen recordings and selected existing generated examples. See [media rights and conditions](docs/media/README.md).

@@ -13,7 +13,7 @@
 
 Both workflows still use identity pictures. “Without video” removes only the guide-video reference; it does not switch the model to T2VA.
 
-## カフェ着座の比較 / Seated cafe comparison
+## 初期のカフェ着座比較 / Initial seated cafe comparison
 
 同じseed 42、参照画像3枚、576×1024、124フレーム/24fps、既存Fused Ref2VA 4ステップ・SLA構成で各1本生成。場面文・軌道・人物指定は共通。動画入力と、それに対応するVideoラベルの説明だけを変更しました。
 
@@ -31,7 +31,9 @@ Both remained above the subject at 1s and were frontal by 2.5s, missing the requ
 
 ---
 
-以下には旧固定プロンプトの検証履歴も含まれます。 / The sections below also retain historical fixed-prompt experiments.
+以下には現在の導入情報と、明示した旧固定プロンプトの検証履歴を分けて記載します。公開チュートリアル末尾のカフェ例は別の後続実験です。[動画の条件](media/README.md)を参照してください。
+
+The sections below include current setup information and explicitly labeled historical fixed-prompt tests. The cafe clip at the end of the public tutorial comes from a separate later experiment; see [video conditions](media/README.md).
 
 
 ## ガイド単体とH3の違い / Guide node versus H3
@@ -70,6 +72,8 @@ Both remained above the subject at 1s and were frontal by 2.5s, missing the requ
 ## 接続と初期設定 / Connections and defaults
 
 ```text
+H3 3D Camera Guide.camera_json ─> H3CameraPrompt.camera_json
+H3CameraPrompt.combined_prompt ─> MiniMaxH3ReferenceToVideo.prompt
 H3 3D Camera Guide.rgb_frames ──> MiniMaxH3ReferenceToVideo.ref_videos.ref_video_0
 H3 3D Camera Guide.video ───────> Save Video (RGB Camera Guide)
 Load Image × 3 ────────────────> MiniMaxH3ReferenceToVideo.ref_images.*
@@ -83,7 +87,7 @@ Load Image × 3 ────────────────> MiniMaxH3Refer
 
 **English:** Defaults are 576×1024, 124 frames, 24 fps, fixed seed 42 and res_multistep/simple with four steps. Replace the three placeholder images with references of the same character. If you change guide dimensions/duration, manually match H3's width/height/length. H3 interprets the reference at 24 fps. The tested implementation truncates to 17n+5 frames; 124 satisfies that condition.
 
-## 固定プロンプト / Fixed prompt
+## 旧固定プロンプト（現行テンプレートとは異なる） / Historical fixed prompt (not the current template)
 
 **日本語:** 「参照動画のカメラの動き、構図、距離、タイミングだけに従う」と指示しています。人物の外観は画像参照から取り、棒人間の見た目は転写しないよう指定しています。軌道の時刻や角度をpromptへ手入力する必要はありません。人物の姿勢・動作は本文から指定します。固定ポーズの人型と「座る」などを競合させないため、ガイドの姿勢は転写しない指示に変更しました。
 

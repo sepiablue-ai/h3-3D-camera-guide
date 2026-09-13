@@ -8,12 +8,23 @@ ROOT = Path(__file__).resolve().parents[1]
 required = ["__init__.py", "nodes.py", "camera.py", "camera_prompt.py", "renderer.py", "README.md",
             "LICENSE", "THIRD_PARTY_NOTICES.md", ".gitignore", ".gitattributes",
             "requirements.txt", "web/extension.js", "web/editor.html", "web/editor.mjs", "web/camera.mjs"]
+media = {'docs/media/camera-guide-tutorial.mp4', 'docs/media/tutorial-preview.jpg'}
+required.extend(sorted(media))
+required.append('docs/media/README.md')
 public = [ROOT / p for p in required]
 for directory in ["web", "workflows", "tools", "tests", "docs"]:
     public.extend(p for p in (ROOT / directory).rglob('*') if p.is_file() and '__pycache__' not in p.parts)
 public = sorted(set(public))
 for path in public:
     assert path.is_file(), f'Missing: {path}'
+    if path.relative_to(ROOT).as_posix() in media:
+        data = path.read_bytes()
+        assert 0 < len(data) < 25_000_000, f'Unexpected media size: {path}'
+        if path.suffix == '.mp4':
+            assert data[4:8] == b'ftyp', f'Invalid MP4 header: {path}'
+        else:
+            assert data[:3] == b'\xff\xd8\xff', f'Invalid JPEG header: {path}'
+        continue
     text = path.read_text(encoding='utf-8-sig')
     assert not re.search(r'[A-Za-z]:[\\/]+Users[\\/]', text), f'Personal path: {path}'
     assert not re.search(r'testS\d+_T\d+_ref_', text), f'Personal reference filename: {path}'
@@ -50,6 +61,12 @@ for path in (ROOT/'workflows').glob('*.json'):
         prompt_input = next(i for i in nodes[131]['inputs'] if i['name'] == 'prompt')
         assert links[prompt_input['link']][1:3] == [1002, 0]
         assert nodes[1002]['type'] == 'H3CameraPrompt'
+    if path.name == 'minimax_h3_camera_prompt_only.json':
+        inp = next(i for i in nodes[131]['inputs'] if i['name'] == 'ref_videos.ref_video_0')
+        assert inp['link'] is None, 'Prompt-only template still has a video reference'
+        assert nodes[1002]['widgets_values_named']['use_reference_video'] is False
+        prompt_input = next(i for i in nodes[131]['inputs'] if i['name'] == 'prompt')
+        assert links[prompt_input['link']][1:3] == [1002, 0]
 
 ignore = (ROOT/'.gitignore').read_text()
 assert '/validation/' in ignore and '/MiniMax_H3_3D_Camera_Guide.json' in ignore

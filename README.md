@@ -1,8 +1,18 @@
 # H3 3D Camera Guide for ComfyUI
 
-**日本語:** ノード内の3Dビューでカメラを動かし、キーフレームから簡易人型のRGBガイド動画を作る、ローカル完結のComfyUIカスタムノードです。MiniMax H3 Ref2VAへ参照動画として接続できます。
+**日本語:** ノード内の3Dビューでカメラを動かし、キーフレームから簡易人型のRGBガイド動画を作る、ローカル完結のComfyUIカスタムノードです。軌道からカメラ専用プロンプトも生成し、MiniMax H3 Ref2VAへ文章のみ、または文章＋参照動画で接続できます。
 
-**English:** A local ComfyUI custom node for editing camera motion in an embedded 3D view and rendering RGB guide videos of a simple mannequin from keyframes. Its frames can be connected to MiniMax H3 Ref2VA as a video reference.
+**English:** A local ComfyUI custom node for editing camera motion in an embedded 3D view and rendering RGB guide videos of a simple mannequin from keyframes. It also compiles camera-only prompts from the trajectory for MiniMax H3 Ref2VA, with or without guide-video conditioning.
+
+## 使い方動画 / Tutorial
+
+[![使い方動画 / Tutorial](docs/media/tutorial-preview.jpg)](docs/media/camera-guide-tutorial.mp4)
+
+**[▶ 動画を開く・ダウンロード / Watch or download (67 s)](docs/media/camera-guide-tutorial.mp4)**
+
+**日本語:** 実際のComfyUI操作を拡大表示し、日本語字幕と英語の補助説明で紹介します。最後に、カメラガイドを左、草原とカフェの既存生成例を右に並べます。カフェ例は**公開ノードに未統合の改善ルールによる文章のみの検証結果**です。配布版からの再現を保証する例ではありません。[収録内容・生成条件・メディアの権利](docs/media/README.md)を参照してください。
+
+**English:** Actual ComfyUI operations with zooms, Japanese captions and supporting English text, followed by side-by-side guide and generated examples in grassland and a cafe. The cafe clip is a **text-only experiment using improved rules not yet integrated into the released node**, not a guaranteed reproduction example for the release. See [contents, conditions and media rights](docs/media/README.md).
 
 ## 機能 / Features
 
@@ -15,6 +25,7 @@
 | 人型または球体と床のRGBフレーム列・VIDEO出力 | RGB frames and VIDEO with a mannequin or ball and floor |
 | 既存動画の再利用、任意の床の色付き目印 | Reuse existing videos; optional colored floor landmarks |
 | 編集用カメラ・軌道・グリッド・軸・UIは出力に含まない | Editor cameras, paths, grids, axes and UI are excluded from renders |
+| 軌道を英文へ変換し、人物の動作文と合成 | Rule-based trajectory-to-text compilation and scene-prompt composition |
 | Three.js同梱、実行時CDN不要、追加Pythonパッケージ不要 | Vendored Three.js; no runtime CDN or additional Python packages |
 
 ## 必要環境 / Requirements
@@ -32,6 +43,14 @@
 3. **日本語:** ノード検索で **H3 3D Camera Guide** を追加するか、下記のサンプルを読み込みます。カテゴリは `H3/Camera Guide` です。
    **English:** Add **H3 3D Camera Guide** from node search or load a sample below. The category is `H3/Camera Guide`.
 
+**日本語:** Gitを使う場合は `ComfyUI/custom_nodes` で次を実行してください。更新はインストール先のフォルダで `git pull` を実行後、ComfyUIを再起動しブラウザを再読み込みします。
+
+**English:** With Git, run this inside `ComfyUI/custom_nodes`. To update, run `git pull` inside the installed repository, restart ComfyUI, and reload the browser.
+
+```shell
+git clone https://github.com/sepiablue-ai/h3-3D-camera-guide.git
+```
+
 **日本語:** `requirements.txt` は追加依存がないことを示すコメントのみです。通常利用でpipやnpmによるインストール、ビルドは不要です。
 
 **English:** `requirements.txt` contains only a note that there are no extra dependencies. Normal use requires no pip/npm installation or build step.
@@ -42,7 +61,8 @@
 |---|---|
 | [camera_guide.json](workflows/camera_guide.json) | ガイド生成→保存の2ノード / Two nodes: render and save a guide |
 | [camera_guide.api.json](workflows/camera_guide.api.json) | 同じ構成のAPI形式 / API-format equivalent |
-| [minimax_h3_ref2va.json](workflows/minimax_h3_ref2va.json) | 3Dカメラ→H3 Ref2VA→動画保存 / Integrated camera-to-H3 workflow |
+| [minimax_h3_ref2va.json](workflows/minimax_h3_ref2va.json) | カメラ文章＋ガイド動画→H3 / Camera text plus guide video → H3 |
+| [minimax_h3_camera_prompt_only.json](workflows/minimax_h3_camera_prompt_only.json) | カメラ文章のみ→H3（人物参照画像は使用） / Camera text only → H3 (identity pictures retained) |
 
 **日本語:** 最初はガイド単体のworkflowを使ってください。H3統合版は追加ノードとモデルが必要なテンプレートです。3つのLoad Imageで、自分の同一人物の参照画像を選択してください。`reference_1.png`〜`reference_3.png` は差し替え用の名前で、画像は同梱しません。使用モデルと追加ノードは [H3接続説明](docs/H3_INTEGRATION.md) に記載しています。
 
@@ -110,9 +130,9 @@ Generality covers the trajectories representable by this editor; unsupported rol
 
 **English:** Connect `rgb_frames` to H3's `ref_videos.ref_video_0` and use **24 fps**. The integrated workflow's “RGB Camera Guide” node is a Save Video node for the guide preview. Its output may remain unconnected; H3 receives frames directly from the 3D camera node.
 
-**日本語:** H3テンプレートのpromptは「参照動画のカメラの動きだけに従う」という固定指示です。軌道を変更するたびに時刻・角度・移動方向を書き直す必要はありません。人物や画風を変えたい場合は、その部分のpromptを調整してください。
+**日本語:** 現行のH3テンプレートは合成ノードが時刻・角度・移動方向を軌道から自動生成します。人物・画風・動作は `scene_prompt` と `identity_prompt` に記述し、同じ欄にカメラ指示を重ねないでください。文章のみのテンプレートでも現在はガイドノードのRGB処理を実行して `camera_json` を取得します。「H3へ動画を入力しない」と「ガイドを描画しない」は別です。
 
-**English:** The H3 template uses a fixed instruction to follow only the reference video's camera motion. Changing the trajectory does not require rewriting timestamps, angles or directions. Adjust the identity/style instructions if you want a different subject or appearance.
+**English:** The current H3 templates use the composer to derive times, angles and movement directions from the trajectory. Put character, style and action instructions in `scene_prompt` and `identity_prompt`; avoid competing camera instructions in those fields. The text-only template currently still executes the guide node's RGB processing to obtain camera JSON. Omitting video conditioning from H3 does not eliminate guide rendering.
 
 ## 仕様と制限 / Behavior and limitations
 
@@ -139,18 +159,19 @@ Fifteen tests cover camera math, trajectory compilation, saved-video metadata re
 
 カフェで座って飲む場面を、同じseed・参照画像でカメラ文のみ／カメラ文＋動画の各1本生成しました。どちらも俯瞰→正面→横の順序と着座した飲む動作が出ましたが、指定の1秒での正面到達は未達です。一般的な動画参照の優劣は未確定です。条件・旧検証との区別は [H3接続と比較](docs/H3_INTEGRATION.md) を参照してください。
 
-One seated-coffee clip per mode used the same seed and identity references. Both camera-text-only and camera-text-plus-video produced overhead/front/side views with seated drinking, but missed the one-second frontal arrival. No general winner is established. See [H3 integration and comparisons](docs/H3_INTEGRATION.md). Personal reference images, generated media and raw logs are excluded from the public release.
+One seated-coffee clip per mode used the same seed and identity references. Both camera-text-only and camera-text-plus-video produced overhead/front/side views with seated drinking, but missed the one-second frontal arrival. No general winner is established. See [H3 integration and comparisons](docs/H3_INTEGRATION.md). Personal reference images and raw logs are excluded. Only the explicitly published tutorial includes selected generated examples; see its conditions above.
 
 ## フォルダ構成 / Repository layout
 
 ```text
 h3-3D-camera-guide/
-├── __init__.py, nodes.py, camera.py, renderer.py  # Python runtime
+├── __init__.py, nodes.py, camera.py, camera_prompt.py, renderer.py  # Python runtime
 ├── web/                                         # Editor and vendored Three.js
 ├── workflows/                                   # Public example workflows
 ├── tests/                                       # Camera/render tests
 ├── tools/                                       # Optional developer tools
 ├── docs/H3_INTEGRATION.md                        # H3 setup (JA / EN)
+├── docs/media/                                  # Tutorial MP4, preview and media notes
 ├── LICENSE                                      # Project MIT license
 ├── THIRD_PARTY_NOTICES.md                        # Third-party notices (JA / EN)
 └── README.md
@@ -168,6 +189,7 @@ h3-3D-camera-guide/
 
 ```powershell
 python -s tests/test_camera.py
+python -s tests/test_camera_prompt.py
 python -s tools/check_release.py
 ```
 
@@ -185,6 +207,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools/install.ps1 -ComfyRoot
 
 ## ライセンス / License
 
-**日本語:** 本体の独自コード・ドキュメント・独自workflow構成は [MIT](LICENSE)。Three.jsの著作権表示・MIT原文は [別途保持](web/vendor/THREE-LICENSE.txt) しています。モデルや参照画像、生成物を本体のMITで一括許諾するものではありません。詳細は [第三者の権利表示](THIRD_PARTY_NOTICES.md) を参照してください。
+**日本語:** 本体の独自コード・ドキュメント・独自workflow構成は [MIT](LICENSE)。Three.jsの著作権表示・MIT原文は [別途保持](web/vendor/THREE-LICENSE.txt) しています。モデルや参照画像、生成物を本体のMITで一括許諾するものではありません。公開デモ動画と画像はMIT対象外で、[メディアの権利](docs/media/README.md)を別記しています。詳細は [第三者の権利表示](THIRD_PARTY_NOTICES.md) を参照してください。
 
-**English:** Original project code, documentation and workflow configuration are licensed under [MIT](LICENSE). Three.js retains its [own copyright notice and MIT text](web/vendor/THREE-LICENSE.txt). This does not license model weights, reference assets or generated media collectively under the project's MIT license. See [third-party notices](THIRD_PARTY_NOTICES.md).
+**English:** Original project code, documentation and workflow configuration are licensed under [MIT](LICENSE). Three.js retains its [own copyright notice and MIT text](web/vendor/THREE-LICENSE.txt). This does not license model weights, reference assets or generated media collectively under the project's MIT license. Published demo media are excluded from MIT; see [media rights](docs/media/README.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
