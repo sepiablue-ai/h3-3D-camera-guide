@@ -13,6 +13,16 @@
 
 Both workflows still use identity pictures. “Without video” removes only the guide-video reference; it does not switch the model to T2VA.
 
+## 投影方向ルールの統合 / Projected-direction rule integration
+
+**日本語:** 現行の `H3CameraPrompt` は、俯瞰を含む全仰角で+Zの基準正面方向を画面へ投影して構図を記述します。既存の入出力・widget・workflowは変更不要です。更新後はComfyUIを再起動し、同じキーから再実行してください。参照動画の再利用でも、保存メタデータから軌道が復元できれば同じルールを使います。LLMや追加モデルは使用しません。
+
+**English:** The current `H3CameraPrompt` describes composition by projecting the +Z reference-front direction into the image at all elevations, including overhead. Inputs, outputs, widgets and existing workflows are unchanged. Restart ComfyUI after updating and rerun with the same keys. Reused videos also use the rule when their trajectory can be recovered from saved metadata. No LLM or additional model is required.
+
+**日本語:** 公開チュートリアルのHard/cafe例で改善したのは開始の画面内方向で、終了の左向き横顔も維持されました。中間時刻の追従や別seedの再現性は保証しません。統合したカメラ文章は、その既存実験と文字列一致を確認しています。以下の表はそれ以前の別比較であり、今回の改善効果の測定値ではありません。
+
+**English:** In the tutorial's existing Hard/cafe example, the opening image direction improved and the left-facing ending profile was retained. Intermediate timing and other seeds remain unproven. The integrated camera text was checked for exact equality with that experiment. The table below is an earlier, separate comparison, not a measurement of this improvement.
+
 ## 初期のカフェ着座比較 / Initial seated cafe comparison
 
 同じseed 42、参照画像3枚、576×1024、124フレーム/24fps、既存Fused Ref2VA 4ステップ・SLA構成で各1本生成。場面文・軌道・人物指定は共通。動画入力と、それに対応するVideoラベルの説明だけを変更しました。

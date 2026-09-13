@@ -22,9 +22,9 @@
 
 **English:** Both examples use the first five seconds of existing outputs. The path uses orbit/elevation/distance values of 0°/85°/4 at 0 s, 0°/0°/4 at 2.5 s, and 90°/0°/2.8 at 5.125 s, with a 45° FOV and target (0, 1, 0). The cafe example did not feed a guide video to H3; its left-hand clip visualizes the target for comparison.
 
-**日本語:** カフェ例の投影方向を使う改善ルールはローカル検証用で、公開カスタムノードには未統合です。配布workflowからこの結果がそのまま再現できるという意味ではありません。中間時刻の角度にはずれが残り、カメラ追従を保証するものでもありません。個人の参照画像、モデル、元の生成動画、実行ログ、録画素材は同梱していません。
+**日本語:** カフェ例の投影方向を使う改善ルールは、ローカル検証後に公開カスタムノードへ統合しました。動画は統合前の既存生成結果です。配布workflowからこの結果がそのまま再現できるという意味ではありません。中間時刻の角度にはずれが残り、カメラ追従を保証するものでもありません。個人の参照画像、モデル、元の生成動画、実行ログ、録画素材は同梱していません。
 
-**English:** The cafe clip uses a local experimental rule that describes projected directions; that rule is not integrated into the released custom node. This is not an exact reproduction example for the distributed workflows. Intermediate camera angles still differ from the target, and tracking is not guaranteed. Personal reference images, weights, original generated clips, run logs, and raw recordings are not included.
+**English:** The cafe clip uses projected-direction rules that were subsequently integrated into the released custom node. The video retains the existing output generated before integration. This is not an exact reproduction example for the distributed workflows. Intermediate camera angles still differ from the target, and tracking is not guaranteed. Personal reference images, weights, original generated clips, run logs, and raw recordings are not included.
 
 ## メディアの権利 / Media rights
 

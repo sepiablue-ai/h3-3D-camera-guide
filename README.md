@@ -10,9 +10,9 @@
 
 **[▶ 動画を開く・ダウンロード / Watch or download (67 s)](docs/media/camera-guide-tutorial.mp4)**
 
-**日本語:** 実際のComfyUI操作を拡大表示し、日本語字幕と英語の補助説明で紹介します。最後に、カメラガイドを左、草原とカフェの既存生成例を右に並べます。カフェ例は**公開ノードに未統合の改善ルールによる文章のみの検証結果**です。配布版からの再現を保証する例ではありません。[収録内容・生成条件・メディアの権利](docs/media/README.md)を参照してください。
+**日本語:** 実際のComfyUI操作を拡大表示し、日本語字幕と英語の補助説明で紹介します。最後に、カメラガイドを左、草原とカフェの既存生成例を右に並べます。カフェ例は**今回統合した投影方向ルールによる文章のみの既存検証結果**です。同一映像の再現を保証する例ではありません。[収録内容・生成条件・メディアの権利](docs/media/README.md)を参照してください。
 
-**English:** Actual ComfyUI operations with zooms, Japanese captions and supporting English text, followed by side-by-side guide and generated examples in grassland and a cafe. The cafe clip is a **text-only experiment using improved rules not yet integrated into the released node**, not a guaranteed reproduction example for the release. See [contents, conditions and media rights](docs/media/README.md).
+**English:** Actual ComfyUI operations with zooms, Japanese captions and supporting English text, followed by side-by-side guide and generated examples in grassland and a cafe. The cafe clip is an **existing text-only experiment using the projected-direction rules now integrated into the node**, not a guarantee of identical output. See [contents, conditions and media rights](docs/media/README.md).
 
 ## 機能 / Features
 
@@ -109,6 +109,15 @@ git clone https://github.com/sepiablue-ai/h3-3D-camera-guide.git
 
 The prompt node compiles every saved trajectory interval on the CPU, without an LLM, external API or extra model. It does not match a fixed set of camera presets.
 
+
+**日本語:** 画面の上下左右をカメラのright/up軸への投影で求め、俯瞰でも「顔側が画面下」、側面なら「鼻先が画面左」など、画像上の構図として記述します。基準はエディターの+Z正面です。人物を振り向かせる命令ではなく、人物が独自に回転するとこの基準との対応が変わります。大きな周回は実際の補間軌道上に説明用の中間点を設け、全周回を省略しません。文章用の時点が80を超える軌道は、黙って省略せずエラーにします。
+
+**English:** Image directions are projected onto the camera's right/up axes. Even overhead views retain an image-front cue, such as the facial side toward the bottom; a side view can describe the nose toward the left image edge. The editor's +Z front is the orientation anchor, not an instruction to turn the actor. Independent actor rotation can break that correspondence. Large orbits add descriptive waypoints sampled from the actual interpolated path, preserving full turns. More than 80 descriptive times raises an explicit error rather than truncating the motion.
+
+**日本語:** 既存のHard/cafe・seed42では開始方向が改善し、終了の左向き横顔を維持しました。中間2.5秒の角度ずれは残っています。統合後のカメラ文章が検証用実装と一致することを確認しましたが、今回のリリース作業ではH3の再生成は行っていません。
+
+**English:** The existing Hard/cafe seed-42 test improved the opening direction and retained the left-facing ending profile; the angle at 2.5 seconds still differed. The integrated camera text was checked against the experimental implementation. No additional H3 generation was performed for this integration.
+
 - `camera_json` → 合成ノード → `combined_prompt` → Ref2VAのprompt。既存の `rgb_frames` → Ref2VA参照動画の接続も維持。 / Connect camera JSON to the composer and its combined prompt to Ref2VA; retain the existing guide-frame connection.
 - `scene_prompt` は人物の動作・服装・場面、`identity_prompt` は参照画像と人物の対応。入力文は保持し、カメラ生成文には人物の姿勢・視線・手足の動きを追加しません。 / Scene text controls actions, clothing and setting; identity text defines picture references. User text is preserved; generated camera text adds no body, gaze or limb actions.
 - `use_reference_video=true` は動画参照あり。falseで比較する場合はH3側の動画参照入力も外してください。このスイッチ単独では配線は変更しません。 / Set true when the video is connected. For a text-only camera comparison, set false AND remove the H3 video-reference input; the switch does not rewire the graph.
@@ -153,9 +162,9 @@ Generality covers the trajectories representable by this editor; unsupported rol
 
 ## 検証状況 / Validation status
 
-現在は15テスト（カメラ式、全区間のプロンプト生成、動画メタデータ復元、動作文の保持等）と配布ファイル検査を通過。従来の3D UI操作・保存復元確認に加え、新しい合成ノードの入力表示と配線を確認しています。
+現在は20テスト（カメラ式、全区間のプロンプト生成、動画メタデータ復元、動作文の保持等）と配布ファイル検査を通過。従来の3D UI操作・保存復元確認に加え、新しい合成ノードの入力表示と配線を確認しています。
 
-Fifteen tests cover camera math, trajectory compilation, saved-video metadata recovery and action-text preservation; release checks pass. Existing 3D editing/save-reload checks are supplemented by the new composer's input and wiring checks.
+Twenty tests cover camera math, trajectory compilation, saved-video metadata recovery and action-text preservation; release checks pass. Existing 3D editing/save-reload checks are supplemented by the new composer's input and wiring checks.
 
 カフェで座って飲む場面を、同じseed・参照画像でカメラ文のみ／カメラ文＋動画の各1本生成しました。どちらも俯瞰→正面→横の順序と着座した飲む動作が出ましたが、指定の1秒での正面到達は未達です。一般的な動画参照の優劣は未確定です。条件・旧検証との区別は [H3接続と比較](docs/H3_INTEGRATION.md) を参照してください。
 

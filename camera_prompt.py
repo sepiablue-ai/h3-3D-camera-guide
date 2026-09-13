@@ -1,7 +1,8 @@
 """CPU-only trajectory-to-language compiler. No vision inference or subject actions."""
 import json
+import math
 import re
-from .camera import parse_state, sample
+from .camera import parse_state, sample, basis
 
 
 def saved_trajectory(metadata, filename, width, height, frames, fps):
@@ -31,15 +32,87 @@ def saved_trajectory(metadata, filename, width, height, frames, fps):
     return matches[0] if len(matches)==1 else None
 
 
-def stamp(t):
-    return f"{int(t)//60:02d}:{t%60:06.3f}"
+def dot(a, b):
+    return sum((x * y for x, y in zip(a, b)))
 
+def screen_direction(k, reference_forward=(0, 0, 1)):
+    """Project the reference front into the displayed image, with +y downward. Near-degenerate projections have no invented bearing."""
+    norm = math.sqrt(dot(reference_forward, reference_forward))
+    if not math.isfinite(norm) or norm < 1e-09:
+        raise ValueError('Invalid reference forward vector')
+    f = [v / norm for v in reference_forward]
+    _, right, up, _ = basis(k)
+    x = dot(f, right)
+    y = -dot(f, up)
+    if math.hypot(x, y) < 0.08:
+        return None
+    index = int(math.floor((math.atan2(y, x) + math.pi / 8) / (math.pi / 4))) % 8
+    return ['RIGHT', 'BOTTOM-RIGHT', 'BOTTOM', 'BOTTOM-LEFT', 'LEFT', 'TOP-LEFT', 'TOP', 'TOP-RIGHT'][index]
 
-def view(k):
-    e = k['elevation']
-    angle = 'near-vertical overhead, looking down' if e >= 75 else 'high-angle, looking down' if e > 15 else 'near-vertical underside, looking up' if e <= -75 else 'low-angle, looking up' if e < -15 else 'level with the aim point'
-    return (f"{angle}; scene azimuth {k['orbit']:g} degrees, elevation {e:g} degrees, "
-            f"distance {k['distance']:g} scene units, vertical FOV {k['fov']:g} degrees")
+def describe(k, reference_forward=(0, 0, 1)):
+    """Describe composition relative to a fixed orientation anchor, never an actor turn."""
+    f = list(reference_forward)
+    norm = math.sqrt(dot(f, f))
+    f = [v / norm for v in f]
+    pos, _, _, _ = basis(k)
+    to_camera = [pos[i] - k['target'][i] for i in range(3)]
+    horiz = math.hypot(to_camera[0], to_camera[2])
+    facing = (to_camera[0] * f[0] + to_camera[2] * f[2]) / max(horiz * math.hypot(f[0], f[2]), 1e-09)
+    el = k['elevation']
+    angle = abs(el)
+    direction = screen_direction(k, f)
+    if angle >= 75:
+        text = f'a near-vertical overhead shot, only {90 - angle:g} degrees away from straight down, showing the crown and surrounding ground' if el > 0 else f'a near-vertical upward shot, only {90 - angle:g} degrees away from straight up'
+    else:
+        text = f'a downward-looking view from {angle:g} degrees above horizontal' if el > 5 else f'an upward-looking view from {angle:g} degrees below horizontal' if el < -5 else 'a horizontal view, without looking down or up'
+        text += '; ' + ('a frontal view' if facing > 0.966 else 'a rear view' if facing < -0.966 else 'a side-profile view' if abs(facing) < 0.259 else 'a front three-quarter view' if facing > 0 else 'a rear three-quarter view')
+    if direction:
+        if abs(facing) < 0.259 and angle < 75:
+            text += f'; the camera image shows the nose pointing toward the {direction} edge of the displayed image'
+        elif angle >= 75:
+            text += f'; in this image the facial/front side is toward the {direction} edge, and the back-of-head side is opposite'
+        else:
+            text += f'; the reference front direction projects toward the {direction} edge of the displayed image'
+    return text
+
+def compile_projected(state, frames=124, fps=24, reference_forward=(0, 0, 1)):
+    """Describe sampled views along the real smoothstep path. Added waypoints preserve full turns; reject excessive prompt sizes before allocating them."""
+    state = parse_state(state)
+    if len(reference_forward) != 3 or not all((math.isfinite(v) for v in reference_forward)) or abs(reference_forward[1]) > 1e-06 or (math.hypot(reference_forward[0], reference_forward[2]) < 1e-09):
+        raise ValueError('Reference front must be a finite horizontal heading in the current Y-up editor')
+    if frames < 1 or fps <= 0:
+        raise ValueError('Invalid output duration')
+    end = (frames - 1) / fps
+    times = sorted({0.0, end, *(k['t'] for k in state['keys'] if 0 < k['t'] < end)})
+    extra = []
+    for ta, tb in zip(times, times[1:]):
+        a, b = (sample(state, ta), sample(state, tb))
+        steps = max(1, math.ceil(abs(b['orbit'] - a['orbit']) / 60))
+        if steps > 80:
+            raise ValueError('Too many camera waypoints for a readable prompt; split the shot')
+        extra.extend((ta + (tb - ta) * j / steps for j in range(1, steps)))
+    times = sorted(set(times + extra))
+    if len(times) > 80:
+        raise ValueError('Too many camera waypoints for a readable prompt; split the shot')
+    lines = ["[Shot 1] One continuous camera take, without cuts. All image-edge directions below describe the camera composition, not commands for the character to turn or change pose. The orientation anchor is the subject's reference front. Keep the independently specified scene action."]
+    for i, t in enumerate(times):
+        k = sample(state, t)
+        lines.append(f"At {t:.3f} seconds: {describe(k, reference_forward)}. Camera distance from the aim point is {k['distance']:g} scene units; vertical field of view is {k['fov']:g} degrees.")
+        if i == len(times) - 1:
+            break
+        b = sample(state, times[i + 1])
+        moves = []
+        if k['orbit'] != b['orbit'] or k['elevation'] != b['elevation']:
+            moves.append('travel along the camera arc through the ordered views above and below, keeping the aim point in view')
+        if k['distance'] != b['distance']:
+            moves.append(f"physically {('push in' if b['distance'] < k['distance'] else 'pull back')} from distance {k['distance']:g} to {b['distance']:g}")
+        if k['fov'] != b['fov']:
+            moves.append(f"change vertical field of view from {k['fov']:g} to {b['fov']:g} degrees")
+        if k['target'] != b['target']:
+            moves.append(f"translate the camera rig and its aim point together from {k['target']} to {b['target']} in scene coordinates, independently of the actor")
+        lines.append(f'From {t:.3f} to {times[i + 1]:.3f} seconds, ' + ('; simultaneously, '.join(moves) if moves else 'hold camera position, aim and lens fixed') + '.')
+    lines.append('Preserve the saved smooth ease-in/ease-out timing. When the field of view is unchanged, move the camera physically rather than zooming. Do not rotate the picture to fake the camera move.')
+    return '\n'.join(lines)
 
 
 def compile_camera(camera_json, frames=None, fps=None):
@@ -51,35 +124,12 @@ def compile_camera(camera_json, frames=None, fps=None):
     if frames is None or fps is None:
         raise ValueError('Trajectory needs frames and fps metadata. Connect camera_json from the updated H3 Camera Guide.')
     state = parse_state(raw['camera_state'] if raw.get('source_mode') == 'reuse_video' else raw)
-    if not 1 <= frames <= 720 or not 1 <= fps <= 60:
+    if (not isinstance(frames, (int, float)) or isinstance(frames, bool)
+            or not math.isfinite(frames) or not float(frames).is_integer()
+            or not isinstance(fps, (int, float)) or isinstance(fps, bool)
+            or not math.isfinite(fps) or not 1 <= frames <= 720 or not 1 <= fps <= 60):
         raise ValueError('Invalid frame count or fps')
-    end = (frames - 1) / fps
-    times = sorted({0., end, *(k['t'] for k in state['keys'] if 0 < k['t'] < end)})
-    lines = ['[Shot 1] One continuous camera take. The following trajectory controls only the camera.',
-             'Coordinates describe the guide scene: +Y is up, +Z is scene-front, +X is scene-right; these are not instructions for a person to face or move in any direction.',
-             f'At {stamp(0)}, the camera starts {view(sample(state, 0))}.']
-    for ta, tb in zip(times, times[1:]):
-        a, b = sample(state, ta), sample(state, tb)
-        moves = []
-        da, de, dd, df = (b[n]-a[n] for n in ('orbit','elevation','distance','fov'))
-        if abs(da) > 1e-6:
-            direction = '+Z toward +X' if da > 0 else '+Z toward -X'
-            moves.append(f"the camera arcs around the aim point by {abs(da):g} degrees in the {direction} azimuth direction (unwrapped azimuth {a['orbit']:g} to {b['orbit']:g} degrees, including all full turns); this is camera travel around the scene, not an in-place pan")
-        if abs(de) > 1e-6:
-            moves.append(f"the camera {'rises' if de > 0 else 'descends'} along a vertical arc, changing elevation from {a['elevation']:g} to {b['elevation']:g} degrees while aiming at the specified point")
-        if abs(dd) > 1e-6:
-            moves.append(f"the camera {'pulls out' if dd > 0 else 'pushes in'} from {a['distance']:g} to {b['distance']:g} scene units from the aim point")
-        if abs(df) > 1e-6:
-            moves.append(f"the lens zooms {'out' if df > 0 else 'in'}, changing vertical FOV from {a['fov']:g} to {b['fov']:g} degrees")
-        delta = [y-x for x,y in zip(a['target'],b['target'])]
-        if any(abs(v) > 1e-6 for v in delta):
-            moves.append(f"the camera rig and its aim point translate together from aim coordinates {a['target']} to {b['target']} in scene units, independently of any character movement")
-        if moves:
-            lines.append(f'From {stamp(ta)} to {stamp(tb)}, ' + '; simultaneously, '.join(moves) + f'. At {stamp(tb)}, the camera is {view(b)}.')
-        else:
-            lines.append(f'From {stamp(ta)} to {stamp(tb)}, hold the camera position, aim and lens fixed.')
-    lines.append('Match these times. Between saved keyframes use smooth ease-in and ease-out (u*u*(3-2*u)); simultaneous position, aim and lens changes belong to the same take. Character pose and action are defined only by the scene description.')
-    return '\n'.join(lines)
+    return compile_projected(state, frames, fps)
 
 
 def compose(scene_prompt, identity_prompt, camera_text, use_reference_video, soundscape, music):
