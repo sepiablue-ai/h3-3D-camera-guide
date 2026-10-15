@@ -4,6 +4,8 @@
 
 **English:** A local ComfyUI custom node for editing camera motion in an embedded 3D view and rendering RGB guide videos of a simple mannequin from keyframes. It also compiles camera-only prompts from the trajectory for MiniMax H3 Ref2VA, with or without guide-video conditioning.
 
+> 作者 / Author：かみもと（Kamimoto）｜検証速報 / Quick results：**[X（@sep_is_heim）](https://x.com/sep_is_heim)**｜解説記事 / Write-ups：**[note](https://note.com/sepiablue)**（[記事INDEX / Article index](https://note.com/sepiablue/n/n8e612c619a3e)）
+
 ## 使い方動画 / Tutorial
 
 [![使い方動画 / Tutorial](docs/media/tutorial-preview.jpg)](docs/media/camera-guide-tutorial.mp4)
@@ -213,6 +215,23 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools/install.ps1 -ComfyRoot
 **日本語:** `tools/fetch_vendor.py` はThree.js r169を上流から再取得する開発専用ツールで、ネット接続が必要です。通常利用では実行しません。
 
 **English:** `tools/fetch_vendor.py` is a development-only tool for fetching Three.js r169 from upstream and requires network access. Do not run it for normal installation.
+
+## 作者・関連リポジトリ / Author and related repositories
+
+**日本語:** かみもと（Kamimoto）です。RTX 4070 12GBで、MiniMax H3とComfyUIの高速化・省VRAM化を実測しながら公開しています。
+
+**English:** I'm Kamimoto (かみもと). I measure and publish MiniMax H3 and ComfyUI speed-ups and VRAM reductions on an RTX 4070 12 GB.
+
+- X：[@sep_is_heim](https://x.com/sep_is_heim) — 検証速報 / quick results with step counts, seconds and speed-ups
+- note：[かみもと｜ローカルAI生成](https://note.com/sepiablue) — 解説記事 / write-ups in Japanese（[記事INDEX / Article index](https://note.com/sepiablue/n/n8e612c619a3e)）
+- [さやかベンチマーク / Sayaka Benchmark](https://sayakabenchmark.pages.dev/) — H3ワークフローの速度・画質比較 / speed and quality comparison of H3 workflows
+
+| リポジトリ / Repository | 内容 / What it does |
+|---|---|
+| [ComfyUI-H3-X2-Stream](https://github.com/sepiablue-ai/ComfyUI-H3-X2-Stream) | X2 VAEのINT8化と非同期NVENC保存。1088×1920の音声付き5秒動画を約60秒で生成 / INT8 X2 VAE and asynchronous NVENC saving; 5 s 1088×1920 video with audio in about 60 s |
+| [ComfyUI-H3-LBH-X2-Stream](https://github.com/sepiablue-ai/ComfyUI-H3-LBH-X2-Stream) | 低解像度3step＋高解像度1step。14秒動画で約25%短縮 / 3 low-resolution steps + 1 high-resolution step; about 25% faster for 14 s video |
+| [ComfyUI-H3-AudioFirst-X2-Stream](https://github.com/sepiablue-ai/ComfyUI-H3-AudioFirst-X2-Stream) | 音声を先に作って固定し、金属的な響きを抑える2パス生成 / Audio-first two-pass generation that reduces the metallic voice |
+| [ComfyUI-MiniMax-H3-W4A4-VSA](https://github.com/sepiablue-ai/ComfyUI-MiniMax-H3-W4A4-VSA) | Ref2VAの高速化（FC1 W4A4、Streaming VSA） / Ref2VA acceleration with FC1 W4A4 and Streaming VSA |
 
 ## ライセンス / License
 
